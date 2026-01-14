@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { dietPlan, getTotalItems } from './data/dietPlan';
-import { getQuoteForDate } from './data/quotes';
+import { motivationalQuotes } from './data/quotes';
 import { getCompletedItems, toggleItem, getNote, saveNote } from './api/api';
 import './App.css';
 
@@ -15,12 +15,43 @@ function App() {
     const [note, setNote] = useState('');
     const [isEditingNote, setIsEditingNote] = useState(false);
     const [savedNote, setSavedNote] = useState('');
+    const [quoteIndex, setQuoteIndex] = useState(0);
+    const [isAnimating, setIsAnimating] = useState(false);
     const noteRef = useRef(null);
 
     const totalItems = getTotalItems();
     const completedCount = completedItems.length;
     const progressPercent = Math.round((completedCount / totalItems) * 100);
-    const quote = getQuoteForDate(selectedDate);
+    const currentQuote = motivationalQuotes[quoteIndex];
+
+    // Auto-rotate quotes every 10 seconds
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setIsAnimating(true);
+            setTimeout(() => {
+                setQuoteIndex((prev) => (prev + 1) % motivationalQuotes.length);
+                setIsAnimating(false);
+            }, 300);
+        }, 10000);
+
+        return () => clearInterval(interval);
+    }, []);
+
+    const goToPrevQuote = () => {
+        setIsAnimating(true);
+        setTimeout(() => {
+            setQuoteIndex((prev) => (prev - 1 + motivationalQuotes.length) % motivationalQuotes.length);
+            setIsAnimating(false);
+        }, 300);
+    };
+
+    const goToNextQuote = () => {
+        setIsAnimating(true);
+        setTimeout(() => {
+            setQuoteIndex((prev) => (prev + 1) % motivationalQuotes.length);
+            setIsAnimating(false);
+        }, 300);
+    };
 
     useEffect(() => {
         loadData();
@@ -126,11 +157,30 @@ function App() {
                 </div>
             </header>
 
-            {/* Motivation Quote Section */}
+            {/* Motivation Quote Carousel */}
             <div className="motivation-card">
-                <div className="quote-icon">✨</div>
-                <p className="quote-text">"{quote.quote}"</p>
-                <p className="quote-author">— {quote.author}</p>
+                <button className="carousel-btn prev" onClick={goToPrevQuote}>‹</button>
+                <div className={`quote-content ${isAnimating ? 'fade-out' : 'fade-in'}`}>
+                    <div className="quote-icon">✨</div>
+                    <p className="quote-text">"{currentQuote.quote}"</p>
+                    <p className="quote-author">— {currentQuote.author}</p>
+                </div>
+                <button className="carousel-btn next" onClick={goToNextQuote}>›</button>
+                <div className="carousel-dots">
+                    {motivationalQuotes.map((_, idx) => (
+                        <span
+                            key={idx}
+                            className={`dot ${idx === quoteIndex ? 'active' : ''}`}
+                            onClick={() => {
+                                setIsAnimating(true);
+                                setTimeout(() => {
+                                    setQuoteIndex(idx);
+                                    setIsAnimating(false);
+                                }, 300);
+                            }}
+                        />
+                    ))}
+                </div>
             </div>
 
             {/* Daily Progress */}
